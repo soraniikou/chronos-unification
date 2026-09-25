@@ -310,35 +310,52 @@
     }
     ctx.restore();
   }
-  function label(txt, x, y, a = 1) {
+  function label(txt, x, y, a = 1, align = 'center') {
     ctx.save(); ctx.globalAlpha *= a;
     ctx.font = `${Math.max(16, u * .046)}px ${FONT}`;
-    ctx.fillStyle = 'rgba(190,200,235,.85)'; ctx.textAlign = 'center'; ctx.fillText(txt, x, y);
+    ctx.fillStyle = 'rgba(190,200,235,.85)'; ctx.textAlign = align; ctx.fillText(txt, x, y);
     ctx.restore();
   }
   function drawSide(a, e, ph, pulse) {
     if (a <= 0) return;
     ctx.save(); ctx.globalAlpha = a;
     const ex = W * .12, ey = H * .34, farX = W * .86, slope = .07;
-    const mx = ex + u * .11, my = ey + (mx - ex) * slope;
-    const startX = mx + u * .035;
+    const mx = ex + u * .155, my = ey + (mx - ex) * slope;
+    const startX = mx + u * .05;
     const sx = startX + (farX - startX) * e, sy = ey - (sx - ex) * slope;
     // 視線
     ctx.strokeStyle = 'rgba(245,233,200,.2)'; ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(ex, ey); ctx.lineTo(farX + 10, ey + (farX + 10 - ex) * slope); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(ex, ey); ctx.lineTo(farX + 10, ey - (farX + 10 - ex) * slope); ctx.stroke();
-    // 地球
-    glow(ex, ey, u * .07 * (1 + pulse * .8), [60, 200, 150], .32 + pulse * .3);
-    const eg = ctx.createRadialGradient(ex - u * .005, ey - u * .005, u * .002, ex, ey, u * .013);
-    eg.addColorStop(0, '#7CF2C2'); eg.addColorStop(1, '#0F8F66');
-    ctx.fillStyle = eg; ctx.beginPath(); ctx.arc(ex, ey, u * .013, 0, Math.PI * 2); ctx.fill();
-    label('Here', ex, ey + u * .07);
+    // 地球（エメラルドグリーン）
+    const earthR = u * .024;
+    glow(ex, ey, u * .08 * (1 + pulse * .8), [46, 168, 96], .26 + pulse * .28);
+    const eg = ctx.createRadialGradient(ex - earthR * .4, ey - earthR * .42, earthR * .12, ex, ey, earthR);
+    eg.addColorStop(0, '#6FCF97');
+    eg.addColorStop(.38, '#2EAA68');
+    eg.addColorStop(1, '#043D2E');
+    ctx.fillStyle = eg; ctx.beginPath(); ctx.arc(ex, ey, earthR, 0, Math.PI * 2); ctx.fill();
     // 月
     drawMoon(mx, my, u * .028);
-    label(CFG.NEAR_NAME, mx, my + u * .075);
     // 遠い光
     drawSaturn(sx, sy, u * .02);
-    label(CFG.FAR_NAME, sx, sy - u * .06);
+    // 名前：地球の体に重ねず、近いときは互いに重ならない位置へ
+    const fontPx = Math.max(16, u * .046);
+    ctx.font = `${fontPx}px ${FONT}`;
+    const hereW = ctx.measureText('Here').width;
+    const moonW = ctx.measureText(CFG.NEAR_NAME).width;
+    const satW = ctx.measureText(CFG.FAR_NAME).width;
+    const nameY = Math.max(ey, my) + u * .10;
+    const hereX = ex;
+    let moonX = mx;
+    if (moonX - moonW / 2 < hereX + hereW / 2 + 12) moonX = hereX + hereW / 2 + 12 + moonW / 2;
+    const satNear = Math.hypot(sx - ex, sy - ey) < u * .34;
+    const satMinX = ex + earthR + satW / 2 + u * .08;
+    const satLabelX = satNear ? Math.max(sx, satMinX) : sx;
+    const satLabelY = satNear ? sy - u * .10 : sy - u * .06;
+    label('Here', hereX, nameY);
+    label(CFG.NEAR_NAME, moonX, nameY);
+    label(CFG.FAR_NAME, satLabelX, satLabelY);
     // 光の旅
     if (ph >= 0 && ph < 1) {
       const px = sx + (ex - sx) * ph, py = sy + (ey - sy) * ph;

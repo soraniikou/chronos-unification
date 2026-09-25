@@ -97,7 +97,7 @@
     <h1>The Best Seat</h1>
     <p class="lead">Two lights, impossibly far apart.<br>Let's place them side by side.</p>
     <button id="start" class="btn" type="button">Begin</button>
-    <p class="note">Sound on. About 4 minutes.</p>
+    <p class="note">Sound on. About 4 minutes.<br>Drag the light on the sky to bring it closer.</p>
   </section>
 
   <div id="dist" class="fade" aria-live="off">
@@ -319,7 +319,7 @@
   function drawSide(a, e, ph, pulse) {
     if (a <= 0) return;
     ctx.save(); ctx.globalAlpha = a;
-    const ex = W * .12, ey = H * .52, farX = W * .86, slope = .07;
+    const ex = W * .12, ey = H * .34, farX = W * .86, slope = .07;
     const mx = ex + u * .11, my = ey + (mx - ex) * slope;
     const startX = mx + u * .035;
     const sx = startX + (farX - startX) * e, sy = ey - (sx - ex) * slope;
@@ -399,7 +399,7 @@
         }
         if (tt > 1.5) ambient(t, 4.5 - 2.5 * (1 - dn), .5);
         drawSky(clamp(tt / 1.2));
-        at('hint', 1.0, () => setHint('Drag the light closer, gently'));
+        at('hint', .3, () => setHint('Drag the light closer, gently'));
         if (d < snapDist && tt > 1.2) {
           dragging = false; T = { ...P.satFinal };
           setState('snap'); arp([3, 5, 7], .8); setHint('');

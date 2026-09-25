@@ -1,0 +1,503 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The Best Seat</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    color-scheme: dark;
+    --sky:#070b1f;
+    --ink:#e9ecfa;
+    --dim:#9aa5cf;
+    --gold:#e6c88a;
+    --line:#f5e9c8;
+    box-sizing:border-box;
+    padding-top:env(safe-area-inset-top,0px);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  :root[data-theme="dark"]{ --sky:#070b1f; }
+  html{ height:100%; scroll-padding-top:env(safe-area-inset-top,0px); background:var(--sky); }
+  body{
+    margin:0; height:100%; overflow:hidden; background:var(--sky); color:var(--ink);
+    font-family:"Cormorant Garamond","Iowan Old Style","Palatino Linotype",Georgia,serif;
+    -webkit-tap-highlight-color:transparent; -webkit-user-select:none; user-select:none;
+  }
+  canvas{ position:fixed; inset:0; width:100%; height:100%; display:block; touch-action:none; }
+
+  .layer{
+    position:fixed; inset:0; z-index:2; pointer-events:none;
+    padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px);
+  }
+  .fade{ opacity:0; transition:opacity 1.4s ease; }
+  .fade.on{ opacity:1; }
+
+  .pane{
+    position:absolute; left:0; right:0; top:0; bottom:0;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    text-align:center; padding:0 28px; gap:0;
+  }
+  .pane.on{ pointer-events:auto; }
+  h1{
+    margin:0 0 22px; font-weight:500; font-size:clamp(44px,13vw,84px); line-height:1.05;
+    letter-spacing:.04em; color:var(--line);
+    text-shadow:0 0 28px rgba(245,225,170,.35);
+  }
+  .lead{ margin:0 0 40px; font-size:clamp(20px,5.2vw,24px); line-height:1.65; letter-spacing:.02em; color:var(--ink); }
+  .note{ margin-top:22px; font-size:16px; letter-spacing:.04em; color:var(--dim); }
+
+  .btn{
+    font:inherit; font-size:20px; font-weight:500; letter-spacing:.1em; padding:11px 32px 11px calc(32px + .1em);
+    color:var(--line); background:rgba(245,233,200,.06);
+    border:1px solid rgba(230,200,138,.7); border-radius:999px; cursor:pointer;
+    transition:opacity 1.4s ease, background .25s ease, transform .15s ease;
+  }
+  .btn:hover{ background:rgba(245,233,200,.14); }
+  .btn:active{ transform:scale(.97); }
+  .btn:focus-visible, .snd:focus-visible{ outline:2px solid var(--gold); outline-offset:4px; }
+  .btn.fade{ pointer-events:none; }
+  .btn.fade.on{ pointer-events:auto; }
+
+  .snd{
+    position:absolute; top:calc(env(safe-area-inset-top,0px) + 12px); right:calc(env(safe-area-inset-right,0px) + 14px);
+    pointer-events:auto; font:inherit; font-size:16px; letter-spacing:.05em; color:var(--dim);
+    background:none; border:1px solid rgba(154,165,207,.35); border-radius:999px; padding:6px 12px; cursor:pointer;
+  }
+
+  #dist, #poem{ position:absolute; left:0; right:0; top:56px; text-align:center; padding:0 24px; }
+  #distNum{ display:block; font-size:clamp(36px,10.5vw,58px); letter-spacing:.02em; color:var(--line); font-variant-numeric:tabular-nums; text-shadow:0 0 22px rgba(245,225,170,.3); }
+  #distSub{ display:block; margin-top:6px; font-size:clamp(17px,4.5vw,20px); letter-spacing:.05em; color:var(--dim); }
+
+  #poem p{ margin:0; }
+  #p1{ font-size:clamp(24px,6.6vw,38px); line-height:1.35; letter-spacing:.01em; font-weight:500; color:var(--line); text-shadow:0 0 24px rgba(245,225,170,.25); }
+  #p2{ margin-top:16px !important; font-size:clamp(18px,4.8vw,22px); line-height:1.55; letter-spacing:.01em; color:var(--dim); transition-delay:0s; }
+
+  #bottom{
+    position:absolute; left:0; right:0; bottom:32px;
+    display:flex; flex-direction:column; align-items:center; gap:22px; padding:0 28px; text-align:center;
+  }
+  #hint{ margin:0; min-height:1.8em; font-size:clamp(19px,5.2vw,23px); letter-spacing:.03em; line-height:1.55; color:var(--ink); transition-duration:.7s; }
+  #p3{ margin:0; font-size:clamp(20px,5.4vw,25px); line-height:1.55; letter-spacing:.02em; color:var(--line); text-shadow:0 0 22px rgba(245,225,170,.22); }
+
+  @media (prefers-reduced-motion: reduce){
+    .fade{ transition-duration:.01s; }
+  }
+</style>
+</head>
+<body>
+<canvas id="c" role="img" aria-label="Two distant lights in the night sky"></canvas>
+
+<div class="layer">
+  <button id="snd" class="snd" type="button" aria-pressed="true">Sound on</button>
+
+  <section id="intro" class="pane fade on">
+    <h1>The Best Seat</h1>
+    <p class="lead">Two lights, impossibly far apart.<br>Let's place them side by side.</p>
+    <button id="start" class="btn" type="button">Begin</button>
+    <p class="note">Sound on. About 4 minutes.</p>
+  </section>
+
+  <div id="dist" class="fade" aria-live="off">
+    <span id="distNum">353,000 km</span>
+    <span id="distSub"></span>
+  </div>
+
+  <div id="poem">
+    <p id="p1" class="fade">Earth, the best seat in the house,<br>erases a distance of 1.2 billion kilometers.</p>
+    <p id="p2" class="fade">Even light needs over an hour to cross that distance.<br>Yet our eyes join the two in an instant.</p>
+  </div>
+
+  <div id="bottom">
+    <p id="hint" class="fade" aria-live="polite"></p>
+    <p id="p3" class="fade">Even if only in appearance,<br>that we can feel them side by side<br>may itself be a kind of salvation.</p>
+    <button id="next" class="btn fade" type="button">Look from the side</button>
+  </div>
+</div>
+
+<script>
+(() => {
+  /* ===== 設定：ここを書き換えると数字や名前が変わります ===== */
+  const CFG = {
+    NEAR_NAME: 'Moon',
+    FAR_NAME:  'Saturn',
+    FAR_KM:    1.2e9,   // 遠いほうの光までの距離（km）
+    RATIO:     3400     // 近い光と遠い光の距離の比
+  };
+  /* ========================================================== */
+
+  const NEAR_KM = CFG.FAR_KM / CFG.RATIO;
+  const LIGHT_MIN = Math.round(CFG.FAR_KM / 299792.458 / 60);
+  const MIN_TEXT = `about ${LIGHT_MIN} minutes`;
+  const HOUR_TEXT = LIGHT_MIN >= 60 ? 'over an hour' : MIN_TEXT;
+  const FAR_TEXT = CFG.FAR_KM >= 1e9 ? (CFG.FAR_KM / 1e9).toFixed(1) + ' billion' : Math.round(CFG.FAR_KM / 1e6) + ' million';
+
+  const $ = s => document.querySelector(s);
+  const cv = $('#c'), ctx = cv.getContext('2d');
+  const intro = $('#intro'), startBtn = $('#start'), nextBtn = $('#next');
+  const hint = $('#hint'), dist = $('#dist'), distNum = $('#distNum'), distSub = $('#distSub');
+  const p1 = $('#p1'), p2 = $('#p2'), p3 = $('#p3'), sndBtn = $('#snd');
+  const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // 文言をCFGに合わせる
+  p1.innerHTML = `Earth, the best seat in the house,<br>erases a distance of ${FAR_TEXT} kilometers.`;
+  p2.innerHTML = `Even light needs ${HOUR_TEXT} to cross that distance.<br>Yet our eyes join the two in an instant.`;
+  distSub.textContent = `From Earth to ${CFG.FAR_NAME}`;
+
+  const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+  const easeIO = x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+  const easeOut = x => 1 - Math.pow(1 - x, 4);
+  const FONT = '"Cormorant Garamond","Iowan Old Style",Georgia,serif';
+
+  /* ---------- 画面サイズ・配置 ---------- */
+  let W, H, dpr, u, R, rr, snapDist, startDist, bgGrad;
+  const P = {};
+  const stars = [];
+  for (let i = 0; i < 170; i++) {
+    stars.push({ x: Math.random(), y: Math.random(), r: Math.random() * 1.1 + .3,
+                 p: Math.random() * 6.28, s: .5 + Math.random() * 1.5, a: .25 + Math.random() * .55 });
+  }
+  let S = { x: 0, y: 0 }, T = { x: 0, y: 0 };
+
+  function layout() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = window.innerWidth; H = window.innerHeight;
+    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    u = Math.min(W, H);
+    const cx = W / 2, cy = H * .56;
+    R = u * .075; rr = u * .024; snapDist = u * .30;
+    P.moon = { x: cx - u * .13, y: cy + u * .03 };
+    P.satFinal = { x: cx + u * .13, y: cy - u * .04 };
+    P.satStart = { x: W * .84, y: H * .30 };
+    startDist = Math.hypot(P.satStart.x - P.moon.x, P.satStart.y - P.moon.y);
+    bgGrad = ctx.createLinearGradient(0, 0, 0, H);
+    bgGrad.addColorStop(0, '#04061a'); bgGrad.addColorStop(.55, '#0a1030'); bgGrad.addColorStop(1, '#19224e');
+    if (state === 'intro' || state === 'sky') { S = { ...P.satStart }; T = { ...P.satStart }; }
+    else { S = { ...P.satFinal }; T = { ...P.satFinal }; }
+  }
+
+  /* ---------- 音（ウィンドベル） ---------- */
+  const PENT = [523.25, 587.33, 659.25, 783.99, 880.00, 1046.50, 1174.66, 1318.51, 1567.98]; // C major pentatonic
+  const PARTIALS = [[1, 1, 4.6], [2.76, .34, 2.4], [5.4, .13, 1.3], [8.93, .05, .6]]; // ratio, amp, decay(s)
+  let ac = null, master = null, dryBus = null, rvNode = null, soundOn = true, audioReady = false;
+  let nextAmb = 0, lastIdx = 4, stepAcc = 0, prevS = { x: 0, y: 0 };
+
+  function makeReverb() {
+    const len = Math.floor(ac.sampleRate * 2.8);
+    const buf = ac.createBuffer(2, len, ac.sampleRate);
+    for (let c = 0; c < 2; c++) {
+      const d = buf.getChannelData(c);
+      for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.8);
+    }
+    const cn = ac.createConvolver(); cn.buffer = buf; return cn;
+  }
+  function initAudio() {
+    if (audioReady) { ac.resume && ac.resume(); return; }
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    try {
+      ac = new AC();
+      master = ac.createGain(); master.gain.value = soundOn ? 1 : 0;
+      const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 5200;
+      master.connect(lp); lp.connect(ac.destination);
+      dryBus = ac.createGain(); dryBus.gain.value = .8; dryBus.connect(master);
+      rvNode = makeReverb();
+      const wet = ac.createGain(); wet.gain.value = .55;
+      rvNode.connect(wet); wet.connect(master);
+      audioReady = true;
+      ac.resume && ac.resume();
+    } catch (e) { audioReady = false; }
+  }
+  // やさしい金属の響き：非整数倍音 + 長い余韻 + 小さなリバーブ
+  function chime(freq, vel = 1, delay = 0) {
+    if (!audioReady || !soundOn) return;
+    const t0 = ac.currentTime + delay;
+    const out = ac.createGain(); out.gain.value = .085 * vel;
+    let node = out;
+    if (ac.createStereoPanner) {
+      const pn = ac.createStereoPanner(); pn.pan.value = Math.random() * 1.2 - .6;
+      out.connect(pn); node = pn;
+    }
+    node.connect(dryBus); node.connect(rvNode);
+    PARTIALS.forEach(([ratio, amp, dec], i) => {
+      const f = freq * ratio; if (f > 16000) return;
+      [0, 1].forEach(k => {
+        if (k === 1 && i > 0) return;        // 基音だけ少しずらして重ね、ゆらぎを出す
+        const o = ac.createOscillator(); o.type = 'sine';
+        o.frequency.value = f * (k ? 1.0035 : 1);
+        const g = ac.createGain();
+        g.gain.setValueAtTime(0, t0);
+        g.gain.linearRampToValueAtTime(amp * (k ? .45 : 1), t0 + .006);
+        g.gain.exponentialRampToValueAtTime(.0001, t0 + dec);
+        o.connect(g); g.connect(out); o.start(t0); o.stop(t0 + dec + .05);
+      });
+    });
+  }
+  function randomChime(vel = .6) {
+    lastIdx = clamp(lastIdx + Math.round(Math.random() * 4 - 2), 0, PENT.length - 1);
+    chime(PENT[lastIdx], vel * (.6 + Math.random() * .4));
+  }
+  function arp(idx, vel = .8, gap = .16) { idx.forEach((k, i) => chime(PENT[k], vel, i * gap)); }
+  function ambient(t, interval, vel) {
+    if (t >= nextAmb) { if (nextAmb > 0) randomChime(vel); nextAmb = t + interval * (.7 + Math.random() * .6); }
+  }
+
+  sndBtn.addEventListener('click', () => {
+    soundOn = !soundOn;
+    sndBtn.textContent = soundOn ? 'Sound on' : 'Sound off';
+    sndBtn.setAttribute('aria-pressed', String(soundOn));
+    if (audioReady) master.gain.setTargetAtTime(soundOn ? 1 : 0, ac.currentTime, .1);
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (!audioReady) return;
+    if (document.hidden) ac.suspend(); else if (soundOn) ac.resume();
+  });
+
+  /* ---------- 描画部品 ---------- */
+  function glow(x, y, r, c, a) {
+    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+    g.addColorStop(0, `rgba(${c[0]},${c[1]},${c[2]},${a})`);
+    g.addColorStop(1, `rgba(${c[0]},${c[1]},${c[2]},0)`);
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+  }
+  function drawMoon(x, y, r, gm = 1) {
+    glow(x, y, r * 4.2 * gm, [190, 208, 255], .2);
+    const g = ctx.createRadialGradient(x - r * .3, y - r * .3, r * .1, x, y, r);
+    g.addColorStop(0, '#ffffff'); g.addColorStop(1, '#c7d0ee');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+    ctx.save(); ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.clip();
+    ctx.fillStyle = 'rgba(110,124,168,.28)';
+    [[-.35, -.15, .32, .26], [.2, .25, .28, .22], [.28, -.3, .18, .16]].forEach(([a, b, w, h]) => {
+      ctx.beginPath(); ctx.ellipse(x + a * r, y + b * r, w * r, h * r, .4, 0, Math.PI * 2); ctx.fill();
+    });
+    ctx.restore();
+  }
+  function drawSaturn(x, y, r, gm = 1) {
+    glow(x, y, r * 6 * gm, [235, 205, 140], .26);
+    const lw = Math.max(1, r * .26), rot = -.32;
+    ctx.strokeStyle = 'rgba(230,200,138,.85)'; ctx.lineWidth = lw;
+    ctx.beginPath(); ctx.ellipse(x, y, r * 2.3, r * .75, rot, Math.PI, Math.PI * 2); ctx.stroke();
+    const g = ctx.createRadialGradient(x - r * .3, y - r * .3, r * .1, x, y, r);
+    g.addColorStop(0, '#fff3d0'); g.addColorStop(1, '#d9b46c');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(x, y, r * 2.3, r * .75, rot, 0, Math.PI); ctx.stroke();
+  }
+  function drawBg(t, mul) {
+    ctx.fillStyle = bgGrad; ctx.fillRect(0, 0, W, H);
+    for (const s of stars) {
+      const a = s.a * (reduce ? 1 : .75 + .25 * Math.sin(t * s.s + s.p)) * mul;
+      ctx.fillStyle = `rgba(230,236,255,${a})`;
+      ctx.beginPath(); ctx.arc(s.x * W, s.y * H, s.r, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+  function drawSky(a, linkP = 0, gm = 1) {
+    ctx.save(); ctx.globalAlpha = a;
+    const m = P.moon;
+    drawMoon(m.x, m.y, R, gm);
+    drawSaturn(S.x, S.y, rr, gm);
+    if (linkP > 0) {
+      const dx = S.x - m.x, dy = S.y - m.y, d = Math.hypot(dx, dy), ux = dx / d, uy = dy / d;
+      const x0 = m.x + ux * R * 1.25, y0 = m.y + uy * R * 1.25;
+      const x1 = S.x - ux * rr * 3, y1 = S.y - uy * rr * 3;
+      ctx.strokeStyle = 'rgba(245,233,200,.8)'; ctx.lineWidth = 1.2;
+      ctx.shadowColor = 'rgba(245,225,170,.9)'; ctx.shadowBlur = 10;
+      ctx.beginPath(); ctx.moveTo(x0, y0);
+      ctx.lineTo(x0 + (x1 - x0) * linkP, y0 + (y1 - y0) * linkP); ctx.stroke();
+      ctx.shadowBlur = 0;
+    }
+    ctx.restore();
+  }
+  function label(txt, x, y, a = 1) {
+    ctx.save(); ctx.globalAlpha *= a;
+    ctx.font = `${Math.max(16, u * .046)}px ${FONT}`;
+    ctx.fillStyle = 'rgba(190,200,235,.85)'; ctx.textAlign = 'center'; ctx.fillText(txt, x, y);
+    ctx.restore();
+  }
+  function drawSide(a, e, ph, pulse) {
+    if (a <= 0) return;
+    ctx.save(); ctx.globalAlpha = a;
+    const ex = W * .12, ey = H * .52, farX = W * .86, slope = .07;
+    const mx = ex + u * .11, my = ey + (mx - ex) * slope;
+    const startX = mx + u * .035;
+    const sx = startX + (farX - startX) * e, sy = ey - (sx - ex) * slope;
+    // 視線
+    ctx.strokeStyle = 'rgba(245,233,200,.2)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(ex, ey); ctx.lineTo(farX + 10, ey + (farX + 10 - ex) * slope); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(ex, ey); ctx.lineTo(farX + 10, ey - (farX + 10 - ex) * slope); ctx.stroke();
+    // 地球
+    glow(ex, ey, u * .07 * (1 + pulse * .8), [60, 200, 150], .32 + pulse * .3);
+    const eg = ctx.createRadialGradient(ex - u * .005, ey - u * .005, u * .002, ex, ey, u * .013);
+    eg.addColorStop(0, '#7CF2C2'); eg.addColorStop(1, '#0F8F66');
+    ctx.fillStyle = eg; ctx.beginPath(); ctx.arc(ex, ey, u * .013, 0, Math.PI * 2); ctx.fill();
+    label('Here', ex, ey + u * .07);
+    // 月
+    drawMoon(mx, my, u * .028);
+    label(CFG.NEAR_NAME, mx, my + u * .075);
+    // 遠い光
+    drawSaturn(sx, sy, u * .02);
+    label(CFG.FAR_NAME, sx, sy - u * .06);
+    // 光の旅
+    if (ph >= 0 && ph < 1) {
+      const px = sx + (ex - sx) * ph, py = sy + (ey - sy) * ph;
+      const tx = sx + (ex - sx) * Math.max(0, ph - .12), ty = sy + (ey - sy) * Math.max(0, ph - .12);
+      const lg = ctx.createLinearGradient(tx, ty, px, py);
+      lg.addColorStop(0, 'rgba(255,240,200,0)'); lg.addColorStop(1, 'rgba(255,240,200,.85)');
+      ctx.strokeStyle = lg; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(px, py); ctx.stroke();
+      glow(px, py, 16, [255, 235, 180], .9);
+      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(px, py, 2.4, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  /* ---------- 文言の出し入れ ---------- */
+  let hintTimer = null;
+  function setHint(txt) {
+    clearTimeout(hintTimer); hint.classList.remove('on');
+    if (!txt) return;
+    hintTimer = setTimeout(() => { hint.textContent = txt; hint.classList.add('on'); }, 700);
+  }
+  function showNext(txt) { nextBtn.textContent = txt; nextBtn.classList.add('on'); }
+  function hideNext() { nextBtn.classList.remove('on'); }
+  const fmtKm = v => {
+    if (v >= 1e9) return (v / 1e9).toFixed(1) + ' billion km';
+    if (v >= 1e6) { const x = v / 1e6; return (x >= 10 ? Math.round(x) : x.toFixed(1)) + ' million km'; }
+    return (Math.round(v / 1e3) * 1e3).toLocaleString('en-US') + ' km';
+  };
+
+  /* ---------- 状態機械 ---------- */
+  let state = 'intro', stT0 = performance.now(), done = {}, dragging = false;
+  let tt = 0;
+  function setState(s) { state = s; stT0 = performance.now(); done = {}; }
+  function at(key, time, fn) { if (!done[key] && tt >= time) { done[key] = 1; fn(); } }
+
+  layout();
+
+  const PH0 = 12.5, PH_DUR = 3.6;
+
+  function frame(now) {
+    requestAnimationFrame(frame);
+    const dt = Math.min(.05, (now - frame.last) / 1000 || .016); frame.last = now;
+    const t = now / 1000; tt = (now - stT0) / 1000;
+
+    drawBg(t, state === 'side' ? .75 : 1);
+
+    switch (state) {
+      case 'intro': break;
+
+      case 'sky': {
+        S.x += (T.x - S.x) * (1 - Math.exp(-dt * 9));
+        S.y += (T.y - S.y) * (1 - Math.exp(-dt * 9));
+        const d = Math.hypot(S.x - P.moon.x, S.y - P.moon.y);
+        const dn = clamp((d - snapDist) / (startDist - snapDist));
+        stepAcc += Math.hypot(S.x - prevS.x, S.y - prevS.y); prevS = { x: S.x, y: S.y };
+        if (dragging && stepAcc > u * .09) {
+          stepAcc = 0;
+          chime(PENT[clamp(Math.round((1 - dn) * 6 + Math.random() * 2), 0, 8)], .7);
+        }
+        if (tt > 1.5) ambient(t, 4.5 - 2.5 * (1 - dn), .5);
+        drawSky(clamp(tt / 1.2));
+        at('hint', 1.0, () => setHint('Drag the light closer, gently'));
+        if (d < snapDist && tt > 1.2) {
+          dragging = false; T = { ...P.satFinal };
+          setState('snap'); arp([3, 5, 7], .8); setHint('');
+        }
+        break;
+      }
+
+      case 'snap': {
+        S.x += (P.satFinal.x - S.x) * (1 - Math.exp(-dt * 4));
+        S.y += (P.satFinal.y - S.y) * (1 - Math.exp(-dt * 4));
+        drawSky(1);
+        at('a', .6, () => setHint('Side by side.'));
+        at('b', 2.8, () => showNext('Look from the side'));
+        break;
+      }
+
+      case 'side': {
+        const skyA = 1 - clamp(tt / .9);
+        if (skyA > 0) drawSky(skyA);
+        const sideA = clamp((tt - .6) / .9);
+        const p = clamp((tt - 1.8) / 6.5), e = easeIO(p);
+        const val = NEAR_KM * Math.pow(CFG.FAR_KM / NEAR_KM, e);
+        const ph = tt >= PH0 ? clamp((tt - PH0) / PH_DUR) : -1;
+        const pulse = tt > PH0 + PH_DUR ? clamp(1 - (tt - PH0 - PH_DUR) / 1.2) : 0;
+        drawSide(sideA, e, ph, pulse);
+        distNum.textContent = fmtKm(val);
+        if (tt > 3) ambient(t, 3.6, .4);
+        at('top', 1.2, () => dist.classList.add('on'));
+        at('c1', 8.8, () => setHint(`About ${CFG.RATIO.toLocaleString('en-US')} times as far as the ${CFG.NEAR_NAME}.`));
+        at('c2', PH0 - .1, () => setHint(`Light takes ${MIN_TEXT} to reach us from here.`));
+        at('ping', PH0 + PH_DUR, () => chime(PENT[8], 1));
+        at('nx', PH0 + PH_DUR + 1.8, () => showNext('Look from Earth'));
+        break;
+      }
+
+      case 'back': {
+        const sideA = 1 - clamp(tt / 1.2);
+        if (sideA > 0) drawSide(sideA, 1, -1, 0);
+        const skyA = clamp((tt - .6) / 1.2);
+        const linkP = tt >= 2.2 ? easeOut(clamp((tt - 2.2) / .5)) : 0;
+        const gm = tt > 3 && !reduce ? 1 + .06 * Math.sin(t * 1.6) : 1;
+        drawSky(skyA, linkP, gm);
+        if (tt > 5) ambient(t, 2.0, .55);
+        at('hd', .1, () => dist.classList.remove('on'));
+        at('chord', 2.2, () => arp([8, 7, 5, 4, 3, 1, 0], .8, .2));
+        at('p1', 3.0, () => p1.classList.add('on'));
+        at('p2', 8.0, () => p2.classList.add('on'));
+        at('out', 14.0, () => { p1.classList.remove('on'); p2.classList.remove('on'); });
+        at('p3', 15.5, () => p3.classList.add('on'));
+        at('nx', 21.0, () => showNext('Once more'));
+        break;
+      }
+    }
+  }
+  frame.last = performance.now();
+  requestAnimationFrame(frame);
+
+  /* ---------- 操作 ---------- */
+  function ptr(e) {
+    const rect = cv.getBoundingClientRect();
+    const y = e.clientY - rect.top - (e.pointerType === 'touch' ? 56 : 0);
+    return { x: clamp(e.clientX - rect.left, 16, W - 16), y: clamp(y, 16, H - 16) };
+  }
+  cv.addEventListener('pointerdown', e => {
+    if (state !== 'sky') return;
+    dragging = true; try { cv.setPointerCapture(e.pointerId); } catch (_) {}
+    T = ptr(e);
+  });
+  cv.addEventListener('pointermove', e => { if (dragging && state === 'sky') T = ptr(e); });
+  const endDrag = () => { dragging = false; };
+  cv.addEventListener('pointerup', endDrag);
+  cv.addEventListener('pointercancel', endDrag);
+
+  startBtn.addEventListener('click', () => {
+    initAudio();
+    intro.classList.remove('on');
+    S = { ...P.satStart }; T = { ...P.satStart }; prevS = { ...S }; stepAcc = 0; nextAmb = 0;
+    arp([4, 6], .7, .25);
+    setState('sky');
+  });
+
+  nextBtn.addEventListener('click', () => {
+    hideNext();
+    if (state === 'snap') {
+      setHint('');
+      setState('side');
+    } else if (state === 'side') {
+      setHint('');
+      setState('back');
+    } else if (state === 'back') {
+      p1.classList.remove('on'); p2.classList.remove('on'); p3.classList.remove('on');
+      S = { ...P.satStart }; T = { ...P.satStart }; prevS = { ...S }; stepAcc = 0;
+      setState('sky');
+    }
+  });
+
+  window.addEventListener('resize', layout);
+})();
+</script>
+</body>
+</html>
